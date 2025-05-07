@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  courses   Course[] @relation("InstructorCourses")
+  enrollments Enrollment[]
+
+  @@map("users")
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  instructorId Int?    @map("instructor_id")
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  instructor  User?    @relation("InstructorCourses", fields: [instructorId], references: [id])
+  lessons     Lesson[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  courseId  Int      @map("course_id")
+  status    EnrollmentStatus @default(ACTIVE)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@map("enrollments")
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  courseId  Int      @map("course_id")
+  title     String
+  content   String?  @db.Text
+  videoUrl  String?  @map("video_url")
+  duration  Int?
+  orderIndex Int     @map("order_index")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@map("lessons")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
